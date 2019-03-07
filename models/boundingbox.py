@@ -1,5 +1,6 @@
 """
 @author: viet
+This program draws bounding boxes around numbers in the modified-MNIST
 """
 
 import pickle
@@ -42,3 +43,4 @@ image = cv.blur(image, (2,2))
 source_window = 'Source'
 cv.namedWindow(source_window)
 cv.imshow(source_window, image)
+cv.waitKey()
