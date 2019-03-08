@@ -42,5 +42,7 @@ image = X[0]
 image = cv.blur(image, (2,2))
 source_window = 'Source'
 cv.namedWindow(source_window)
+cv.resizeWindow(source_window, 600, 600)
 cv.imshow(source_window, image)
 cv.waitKey()
+cv.destroyAllWindows()
