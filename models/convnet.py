@@ -16,21 +16,22 @@ from torchvision import transforms
 from torchvision.utils import make_grid
 import math
 import random
-
 from PIL import Image, ImageOps, ImageEnhance
 import numbers
-
 import matplotlib.pyplot as plt
+import cv2 as cv
+
+from models import view_image
 
 class mydata(Dataset):
      def __init__(self, file_path, 
                  transform = transforms.Compose([transforms.ToPILImage(), transforms.ToTensor(), 
-                     transforms.Normalize(mean=(0.5,), std=(0.5,))])
+                     transforms.Normalize(mean=(0.5,), std=(0.5,))]), isimage=False
                 ):
         
         df = pd.read_csv(file_path)
         
-        if len(df.columns) == n_pixels:
+        if len(df.columns) == n_pixels or isimage:
             # test data
             self.X = df.values.reshape((-1,28,28)).astype(np.uint8)[:,:,:,None]
             self.y = None
@@ -235,7 +236,7 @@ def evaluate(data_loader):
         loss, correct, len(data_loader.dataset),
         100. * correct / len(data_loader.dataset)))
 
-def prediciton(data_loader):
+def prediction(data_loader):
     model.eval()
     test_pred = torch.LongTensor()
     
@@ -261,16 +262,33 @@ n_pixels = len(test_df.columns)
 train_dataset = mydata(DIR + 'train.csv', transform= transforms.Compose(
                             [transforms.ToPILImage(), RandomRotation(degrees=20), RandomShift(3),
                              transforms.ToTensor(), transforms.Normalize(mean=(0.5,), std=(0.5,))]))
-#test_dataset = mydata(DIR + 'test.csv', )
+test_dataset = mydata(DIR + 'test.csv', )
+oneimage = mydata('cropped_image_4.csv', isimage=True)
+# View an image
 
+a = oneimage.__getitem__(0).numpy()
+a = a.reshape(-1, a.shape[-1])
+print(a)
+"""
+cropped_image = np.load('cropped_image_4.npy')
+assert cropped_image.shape == (28, 28)
 
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                           batch_size=batch_size, shuffle=True)
+cropped_image = cropped_image[np.newaxis, :, :]
+"""
+model = Net()
+model.load_state_dict(torch.load('saves/cnn99'))
+model.eval()
+model.cuda()
+im_loader = torch.utils.data.DataLoader(dataset=oneimage)
+for i, data in enumerate(im_loader):
+    print(model(data))
+#train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+#                                           batch_size=batch_size, shuffle=True)
 #test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
 #                                           batch_size=batch_size, shuffle=False)
 
 
-
+'''
 model = Net()
 model.cuda()
 optimizer = optim.Adam(model.parameters(), lr=0.003)
@@ -289,9 +307,5 @@ for epoch in range(n_epochs):
     evaluate(train_loader)
 
 torch.save(model.state_dict(), 'saves/cnn99')
+'''
 
-'''
-model = Net()
-model.load_state_dict(torch.load('saves/cnn99'))
-model.eval()
-'''

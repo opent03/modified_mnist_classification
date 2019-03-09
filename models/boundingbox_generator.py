@@ -11,24 +11,11 @@ from PIL import Image, ImageOps
 import matplotlib.pyplot as plt
 import random as rng
 import cv2 as cv
-
-def load_data(dr, train_data, train_labels, sub): 
-    'Loads the data into variables and returns them'
-    'Copied from the other file because whenever importing it runs the other file as well hmmm'
-    trf, tef = open(dr + train_data, 'rb'), open(dr + sub, 'rb')
-    train_data, test_data = pickle.load(trf), pickle.load(tef)
-    train_labels = pd.read_csv(dr + train_labels, sep=',')
-
-    return train_data, train_labels, test_data
-
-def view_image(image):
-    'Displays a single image'
-    im = np.array(image, dtype='float')
-    plt.imshow(im, cmap='gray')
-    plt.show()
+from models import load_data, view_image
 
 
 print(__doc__)
+
 
 data_dir = 'data/'
 train_data, train_labels, sub = 'train_images.pkl', 'train_labels.csv', 'test_images.pkl'
@@ -36,8 +23,9 @@ train_data, train_labels, sub = 'train_images.pkl', 'train_labels.csv', 'test_im
 # Load the data into variables and normalize data
 X, y, sub = load_data(data_dir, train_data, train_labels, sub)
 
-
-src = X[5]
+nb = 5
+src = X[nb]
+oldsrc = X[nb]
 src = src/255
 src = np.uint8(src)
 src_gray = cv.blur(src, (3, 3))
@@ -69,7 +57,7 @@ for i in range(len(contours)):
         (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), color, 2)
     # cv.circle(drawing, (int(centers[i][0]), int(centers[i][1])), int(radius[i]), color, 2)
 # Show in a window
-#cv.imshow('Contours', drawing)
+# cv.imshow('Contours', drawing)
 
 # Find bounding box with greatest area
 areas = []
@@ -78,7 +66,9 @@ for boxes in boundRect:
 
 # Crop image
 x, y, w, h = boundRect[np.argmax(areas)]
-crop_image = src_gray[y:y+h, x:x+w]
+crop_image = oldsrc[y:y+h, x:x+w]
+view_image(crop_image)
+print(crop_image)
 
 # Black padding
 side = 28
@@ -89,7 +79,8 @@ c = np.ceil
 crop_image = cv.copyMakeBorder(crop_image, int(f(topbot)), 
     int(c(topbot)), int(f(leftright)), int(c(leftright)), cv.BORDER_CONSTANT, value=[0,0,0])
 view_image(crop_image)
-
+print(crop_image.reshape(-1).shape)
+np.savetxt('cropped_image_4.csv', crop_image.reshape(-1), delimiter=',')
 #cv.waitKey()
 #cv.destroyAllWindows()
 
