@@ -1,5 +1,6 @@
 data
 mnist
 mnist_data
+models/__pycache__
 __pycache__
 .DS_Store

@@ -7,7 +7,7 @@ attempts to feed into our trained CNN for prediction
 import pickle
 import pandas as pd
 import numpy as np
-import PIL.Image as pil
+from PIL import Image, ImageOps
 import matplotlib.pyplot as plt
 import random as rng
 import cv2 as cv
@@ -21,6 +21,13 @@ def load_data(dr, train_data, train_labels, sub):
 
     return train_data, train_labels, test_data
 
+def view_image(image):
+    'Displays a single image'
+    im = np.array(image, dtype='float')
+    plt.imshow(im, cmap='gray')
+    plt.show()
+
+
 print(__doc__)
 
 data_dir = 'data/'
@@ -30,7 +37,7 @@ train_data, train_labels, sub = 'train_images.pkl', 'train_labels.csv', 'test_im
 X, y, sub = load_data(data_dir, train_data, train_labels, sub)
 
 
-src = X[2]
+src = X[5]
 src = src/255
 src = np.uint8(src)
 src_gray = cv.blur(src, (3, 3))
@@ -53,7 +60,6 @@ for i, c in enumerate(contours):
     contours_poly[i] = cv.approxPolyDP(c, 3, True)
     boundRect[i] = cv.boundingRect(contours_poly[i])
     centers[i], radius[i] = cv.minEnclosingCircle(contours_poly[i])
-print(boundRect)
 # Draw contours
 drawing = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
 for i in range(len(contours)):
@@ -63,11 +69,29 @@ for i in range(len(contours)):
         (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), color, 2)
     # cv.circle(drawing, (int(centers[i][0]), int(centers[i][1])), int(radius[i]), color, 2)
 # Show in a window
-cv.imshow('Contours', drawing)
+#cv.imshow('Contours', drawing)
 
+# Find bounding box with greatest area
+areas = []
+for boxes in boundRect:
+    areas.append(boxes[2]*boxes[3])
 
-cv.waitKey()
-cv.destroyAllWindows()
+# Crop image
+x, y, w, h = boundRect[np.argmax(areas)]
+crop_image = src_gray[y:y+h, x:x+w]
+
+# Black padding
+side = 28
+topbot = (side-h)/2
+leftright = (side-w)/2
+f = np.floor
+c = np.ceil
+crop_image = cv.copyMakeBorder(crop_image, int(f(topbot)), 
+    int(c(topbot)), int(f(leftright)), int(c(leftright)), cv.BORDER_CONSTANT, value=[0,0,0])
+view_image(crop_image)
+
+#cv.waitKey()
+#cv.destroyAllWindows()
 
 
     
