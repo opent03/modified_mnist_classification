@@ -103,6 +103,12 @@ train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_dat
 
 #np.save('saves/train_data.npy', train_data)
 #train_data = np.load('saves/train_data.npy')
+new_train_data = []
+for i in range(len(train_data)):
+    x = train_data[i][0]
+    new_train_data.append([x, x, x])
+
+train_data = np.asarray(new_train_data)
 # Split data
 X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
 
@@ -116,7 +122,7 @@ test = torch.utils.data.TensorDataset(torch_X_test, torch_y_test)
 
 # Important variables
 batch_size = 64
-epochs = 25
+epochs = 10
 
 # Make train and test loaders
 train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
@@ -125,7 +131,7 @@ test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=F
 # Flex that massive GPU
 print('--INITIALIZING RESNET--')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet = torchmodels.resnet152(pretrained=False)
+resnet = torchmodels.inception_v3(pretrained=False)
 
 # Do this if pretrained
 '''
@@ -136,7 +142,7 @@ for child in resnet.children():
         for param in child.parameters():
             param.requires_grad = False
 '''
-resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+#resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 # For inception
 #resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
 resnet.fc = nn.Linear(2048, 10)
@@ -170,7 +176,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'resnet152_epoch' + str(epoch)
+    savefile = 'inceptionv3_epoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 # Plot loss over time
