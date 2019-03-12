@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-fld = 'track/resnet101/'
+fld = 'track/resnet152/'
 fig1 = plt.figure()
 graph_data = open(fld + 'lossfile.txt', 'r').read()
 lines = graph_data.split('\n') 
