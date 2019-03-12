@@ -101,6 +101,19 @@ train_labels = train_labels['Category'].values          # Get labels
 train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
 train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
+def convert_to_3_channels(img_array):
+    'Literally does what the name says it does'
+    new_array = []
+    for i in range(len(img_array)):
+        e = img_array[i][0]
+        new_image = [e,e,e] # 3 channels
+        new_array.append(new_image)
+    return np.asarray(new_array)
+
+train_data = convert_to_3_channels(train_data)
+sub_data = convert_to_3_channels(sub_data)
+print(train_data.shape)
+
 #np.save('saves/train_data.npy', train_data)
 #train_data = np.load('saves/train_data.npy')
 # Split data
@@ -115,7 +128,7 @@ train = torch.utils.data.TensorDataset(torch_X_train, torch_y_train)
 test = torch.utils.data.TensorDataset(torch_X_test, torch_y_test)
 
 # Important variables
-batch_size = 64
+batch_size = 128
 epochs = 25
 
 # Make train and test loaders
@@ -125,7 +138,7 @@ test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=F
 # Flex that massive GPU
 print('--INITIALIZING RESNET--')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet = torchmodels.resnet152(pretrained=False)
+resnet = torchmodels.resnet34(pretrained=False)
 
 # Do this if pretrained
 '''
@@ -136,10 +149,10 @@ for child in resnet.children():
         for param in child.parameters():
             param.requires_grad = False
 '''
-resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+#resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 # For inception
 #resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
-resnet.fc = nn.Linear(2048, 10)
+resnet.fc = nn.Linear(512, 10)
 
 def init_weights(m):
     if type(m) == nn.Linear:
@@ -170,7 +183,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'resnet152_epoch' + str(epoch)
+    savefile = 'resnet_34epoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 # Plot loss over time
