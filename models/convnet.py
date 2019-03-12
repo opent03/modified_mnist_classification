@@ -262,11 +262,11 @@ n_pixels = len(test_df.columns)
 train_dataset = mydata(DIR + 'train.csv', transform= transforms.Compose(
                             [transforms.ToPILImage(), RandomRotation(degrees=20), RandomShift(3),
                              transforms.ToTensor(), transforms.Normalize(mean=(0.5,), std=(0.5,))]))
-test_dataset = mydata(DIR + 'test.csv', )
-oneimage = mydata('cropped_image_4.csv', isimage=True)
+test_dataset = mydata(DIR + 'test.csv',)
+
 # View an image
 
-a = oneimage.__getitem__(0).numpy()
+a = train_dataset.__getitem__(0)[0].numpy()
 a = a.reshape(-1, a.shape[-1])
 print(a)
 """
