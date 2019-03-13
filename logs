@@ -1,0 +1,3 @@
+resnet34 pretrained gives best accuracy 0.953 on held-out validation. froze the first 3 layers.
+
+submission 1 kaggle: resnet34 trained from scratch. kaiming initialization, held out validation accuracy 0.949.

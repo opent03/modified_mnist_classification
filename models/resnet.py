@@ -130,8 +130,6 @@ def convert_to_3_channels(img_array):
 train_data = convert_to_3_channels(train_data)
 sub_data = convert_to_3_channels(sub_data)
 print(train_data.shape)
-for i in range(5):
-    view_image(sub_data[i][0])
 #np.save('saves/train_data.npy', train_data)
 #train_data = np.load('saves/train_data.npy')
 # Split data
@@ -156,7 +154,7 @@ test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=F
 # Flex that massive GPU
 print('--INITIALIZING RESNET--')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet = torchmodels.resnet34(pretrained=True)
+resnet = torchmodels.resnet50(pretrained=True)
 
 # Do this if pretrained
 
@@ -169,7 +167,7 @@ for child in resnet.children():
 #resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 # For inception
 #resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
-resnet.fc = nn.Linear(512, 10)
+resnet.fc = nn.Linear(2048, 10)
 
 def init_weights(m):
     if type(m) == nn.Linear:
@@ -201,7 +199,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'resnet_34pretrainedepoch' + str(epoch)
+    savefile = 'resnet50_pretrainedepoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
