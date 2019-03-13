@@ -169,7 +169,6 @@ if torch.cuda.is_available():
     resnet = resnet.cuda()
     criterion = criterion.cuda()
 
-view_image(sub_data[1][0])
 # Train
 '''
 for epoch in range(epochs):
@@ -226,7 +225,7 @@ plt.title('Accuracy over time')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.show()
-
+'''
 # Make submission to kaggle
 resnet.load_state_dict(torch.load('saves/resnet_34epoch24'))
 resnet.eval()
@@ -239,6 +238,10 @@ for i in range(len(torch_sub_data)):
         test_batch = test_batch.cuda()
     output = resnet(test_batch)
     _, output = torch.max(output, dim=1)
-    sub_labels.append(int(output.data.cpu().numpy()))
+    pred = int(output.data.cpu().numpy())
+    sub_labels.append([i, pred])
+    if i % (len(torch_sub_data)/100) == 0:
+        print('{}%'.format(i/len(torch_sub_data)*100 + 1))
+    
 
-np.savetxt('kaggle_resnet34.csv', sub_labels, delimiter=',')'''
+np.savetxt('kaggle_resnet34.csv', sub_labels, delimiter=',')
