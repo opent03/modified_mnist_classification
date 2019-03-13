@@ -86,8 +86,25 @@ def evaluate_model(model, data_loader):
         loss, correct, len(data_loader.dataset), acc))
     return acc
 
-def kaggle_submission(model, sub_loader):
-    pass
+def kaggle_submission(resnet, name, sub_data):
+    'Make a kaggle submission'
+    resnet.load_state_dict(torch.load('saves/' + name))
+    resnet.eval()
+    torch_sub_data = torch.from_numpy(sub_data)
+
+    sub_labels = []
+    for i in range(len(torch_sub_data)):
+        test_batch = torch_sub_data[i].unsqueeze_(0)
+        if torch.cuda.is_available():
+            test_batch = test_batch.cuda()
+        output = resnet(test_batch)
+        _, output = torch.max(output, dim=1)
+        pred = int(output.data.cpu().numpy())
+        sub_labels.append([i, pred])
+        if i % (len(torch_sub_data)/100) == 0:
+            print('{}%'.format(i/len(torch_sub_data)*100 + 1))
+        
+    np.savetxt('kaggle_{}.csv'.format(name), sub_labels, delimiter=',')
 
 '''
 WHERE THINGS START
@@ -113,7 +130,8 @@ def convert_to_3_channels(img_array):
 train_data = convert_to_3_channels(train_data)
 sub_data = convert_to_3_channels(sub_data)
 print(train_data.shape)
-
+for i in range(5):
+    view_image(sub_data[i][0])
 #np.save('saves/train_data.npy', train_data)
 #train_data = np.load('saves/train_data.npy')
 # Split data
@@ -138,17 +156,16 @@ test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=F
 # Flex that massive GPU
 print('--INITIALIZING RESNET--')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet = torchmodels.resnet34(pretrained=False)
+resnet = torchmodels.resnet34(pretrained=True)
 
 # Do this if pretrained
-'''
+
 ct = 0
 for child in resnet.children():
     ct += 1
-    if ct < 7:
+    if ct < 4:
         for param in child.parameters():
             param.requires_grad = False
-'''
 #resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 # For inception
 #resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
@@ -170,7 +187,7 @@ if torch.cuda.is_available():
     criterion = criterion.cuda()
 
 # Train
-'''
+
 for epoch in range(epochs):
     train_model(resnet, epoch, train_loader)
     print('train accuracy: ')
@@ -184,7 +201,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'resnet_34epoch' + str(epoch)
+    savefile = 'resnet_34pretrainedepoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -225,23 +242,3 @@ plt.title('Accuracy over time')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.show()
-'''
-# Make submission to kaggle
-resnet.load_state_dict(torch.load('saves/resnet_34epoch24'))
-resnet.eval()
-torch_sub_data = torch.from_numpy(sub_data)
-
-sub_labels = []
-for i in range(len(torch_sub_data)):
-    test_batch = torch_sub_data[i].unsqueeze_(0)
-    if torch.cuda.is_available():
-        test_batch = test_batch.cuda()
-    output = resnet(test_batch)
-    _, output = torch.max(output, dim=1)
-    pred = int(output.data.cpu().numpy())
-    sub_labels.append([i, pred])
-    if i % (len(torch_sub_data)/100) == 0:
-        print('{}%'.format(i/len(torch_sub_data)*100 + 1))
-    
-
-np.savetxt('kaggle_resnet34.csv', sub_labels, delimiter=',')
