@@ -161,15 +161,17 @@ resnet.apply(init_weights)
 
 print('--STARTING TRAINING--')
 # Other important variables etc...
-optimizer = optim.Adam(resnet.parameters(), lr=0.003)
+optimizer = optim.Adam(resnet.parameters(), lr=0.002)
 criterion = nn.CrossEntropyLoss()
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.6)
 
 if torch.cuda.is_available():
     resnet = resnet.cuda()
     criterion = criterion.cuda()
 
+view_image(sub_data[1][0])
 # Train
+'''
 for epoch in range(epochs):
     train_model(resnet, epoch, train_loader)
     print('train accuracy: ')
@@ -185,6 +187,7 @@ for epoch in range(epochs):
     # Save epoch successive weights
     savefile = 'resnet_34epoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
+
 
 # Plot loss over time
 fig1 = plt.figure()
@@ -225,7 +228,17 @@ plt.ylabel('Accuracy')
 plt.show()
 
 # Make submission to kaggle
-'''
+resnet.load_state_dict(torch.load('saves/resnet_34epoch24'))
+resnet.eval()
 torch_sub_data = torch.from_numpy(sub_data)
-pred = resnet(torch_sub_data)
-'''
+
+sub_labels = []
+for i in range(len(torch_sub_data)):
+    test_batch = torch_sub_data[i].unsqueeze_(0)
+    if torch.cuda.is_available():
+        test_batch = test_batch.cuda()
+    output = resnet(test_batch)
+    _, output = torch.max(output, dim=1)
+    sub_labels.append(int(output.data.cpu().numpy()))
+
+np.savetxt('kaggle_resnet34.csv', sub_labels, delimiter=',')'''
