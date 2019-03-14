@@ -16,6 +16,6 @@ def load_data(dr, train_data, train_labels, sub):
 def view_image(image):
     'Displays a single image'
     im = np.array(image, dtype='float')
-    plt.imshow(im, cmap='gray')
+    plt.imshow(im)
     plt.show()
 

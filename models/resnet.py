@@ -1,3 +1,8 @@
+'''
+@author: viet
+Trains a resnet and other extra fluff
+'''
+
 import os
 import torch
 from torchsummary import summary
@@ -11,6 +16,7 @@ from torch.autograd import Variable
 import numpy as np
 import pickle
 from models import load_data, view_image
+from models.img_processing import convert_to_3_channels, denoising, threshold_background
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import ion, draw
@@ -31,6 +37,8 @@ if os.path.exists(fld + 'accuracy.txt'):
 '''
 TRAINING/EVALUATING FUNCTIONS
 '''
+
+
 def train_model(model, epoch, train_loader):
     global loss_i
     model.train()
@@ -109,23 +117,18 @@ def kaggle_submission(resnet, name, sub_data):
 '''
 WHERE THINGS START
 '''
-train_data, train_labels, sub_data = load_data('data/', 
-'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
-
-
+train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
 train_labels = train_labels['Category'].values          # Get labels
+# Image processing
 
+train_data, sub_data = threshold_background(train_data), threshold_background(sub_data)
+view_image(sub_data[0])
+exit(0)
 train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
 train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
-def convert_to_3_channels(img_array):
-    'Literally does what the name says it does'
-    new_array = []
-    for i in range(len(img_array)):
-        e = img_array[i][0]
-        new_image = [e,e,e] # 3 channels
-        new_array.append(new_image)
-    return np.asarray(new_array)
+
+
 
 train_data = convert_to_3_channels(train_data)
 sub_data = convert_to_3_channels(sub_data)

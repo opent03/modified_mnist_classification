@@ -1,7 +1,6 @@
 """
 @author: viet
-This program creates a test dataset to draw bounding boxes, and then
-attempts to feed into our trained CNN for prediction
+Literally does what the file name says it does
 """
 
 import pickle

@@ -1,3 +1,7 @@
+'''
+@author: viet
+Prototyping the thinning pipeline, might not use it tho
+'''
 from models import load_data, view_image
 import numpy as np
 

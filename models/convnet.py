@@ -1,6 +1,6 @@
 """
 @author: viet 
-Courtesy of wuchangsheng who so kindly shared his kernel on Kaggle
+Courtesy of user: wuchangsheng, who so kindly shared his kernel on Kaggle
 fmi, https://www.kaggle.com/wuchangsheng/pytorch-cnn
 """
 
