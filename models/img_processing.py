@@ -11,7 +11,7 @@ import pandas as pd
 import cv2 as cv
 
 
-def convert_to_3_channels(img_array):
+def to3chan(img_array):
     new_array = []
     for i in range(len(img_array)):
         e = img_array[i][0]

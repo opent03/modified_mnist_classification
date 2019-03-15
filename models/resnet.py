@@ -16,7 +16,7 @@ from torch.autograd import Variable
 import numpy as np
 import pickle
 from models import load_data, view_image
-from models.img_processing import convert_to_3_channels, denoising, threshold_background
+from models.img_processing import to3chan, denoising, threshold_background, compose
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import ion, draw
@@ -120,19 +120,21 @@ WHERE THINGS START
 train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
 train_labels = train_labels['Category'].values          # Get labels
 # Image processing
-
-train_data, sub_data = threshold_background(train_data), threshold_background(sub_data)
+train_data = np.array(train_data, dtype=np.uint8)
+sub_data = np.array(sub_data, dtype=np.uint8)
+print(train_data.shape)
+exit()
+functions = [denoising, threshold_background]
+train_data, sub_data = compose(train_data, functions), compose(sub_data, functions)
 view_image(sub_data[0])
 exit(0)
 train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
 train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
 
+# Convert to 3 channels so it actually work with most pretrained models
+train_data, sub_data = to3chan(train_data), to3chan(sub_data)
 
-
-train_data = convert_to_3_channels(train_data)
-sub_data = convert_to_3_channels(sub_data)
-print(train_data.shape)
 #np.save('saves/train_data.npy', train_data)
 #train_data = np.load('saves/train_data.npy')
 # Split data
