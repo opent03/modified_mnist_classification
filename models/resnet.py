@@ -167,7 +167,7 @@ for child in resnet.children():
 
 #resnet.fc = nn.Linear(512, 10)
 
-resnet = se_resnet32(num_classes=10)
+resnet = se_resnet56(num_classes=10)
 
 print('--STARTING TRAINING--')
 # Other important variables etc...
@@ -198,7 +198,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'se_resnet32cifarepoch' + str(epoch)
+    savefile = 'se_resnet56epoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -241,4 +241,4 @@ plt.ylabel('Accuracy')
 plt.show()
 
 '''
-kaggle_submission(resnet, 'se_resnet32cifarepoch20', sub_data)
+kaggle_submission(resnet, 'se_resnet56epoch20', sub_data)
