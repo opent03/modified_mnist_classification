@@ -5,3 +5,7 @@ submission 1 kaggle: resnet34 trained from scratch. kaiming initialization, held
 Successfully thresholded image and thinned image
 Now training on resnet34
 Thinning doesnt work well because numbers that have loops are messed up by the thinning algorithm
+Threshold works well on the validation set (in fac, 95.7%) but gives bs predictions for kaggle 
+For some reason idk??
+
+Trying squeeze and excitation networks

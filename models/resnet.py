@@ -25,6 +25,7 @@ from matplotlib import style
 from PIL import Image
 import scipy.misc
 import random
+from senet.se_resnet import *
 style.use('fivethirtyeight')
 # write
 fld = 'track/'
@@ -121,8 +122,8 @@ WHERE THINGS START
 train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
 train_labels = train_labels['Category'].values          # Get labels
 # Image processing
-functions = [threshold_background]  # Must be in order
-train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
+#functions = [threshold_background]  # Must be in order
+#train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
 
 train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
 train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
@@ -144,7 +145,7 @@ test = torch.utils.data.TensorDataset(torch_X_test, torch_y_test)
 
 # Important variables
 batch_size = 128
-epochs = 25
+epochs = 21
 
 # Make train and test loaders
 train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
@@ -153,7 +154,7 @@ test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=F
 # Flex that massive GPU
 print('--INITIALIZING RESNET--')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet = torchmodels.resnet34(pretrained=False)
+#resnet = torchmodels.resnet18(pretrained=False)
 
 # Do this if pretrained
 '''
@@ -163,12 +164,10 @@ for child in resnet.children():
     if ct < 4:
         for param in child.parameters():
             param.requires_grad = False'''
-#resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-# For inception
-#resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
-resnet.fc = nn.Linear(512, 10)
 
+#resnet.fc = nn.Linear(512, 10)
 
+resnet = se_resnet34(num_classes=10)
 
 print('--STARTING TRAINING--')
 # Other important variables etc...
@@ -179,15 +178,13 @@ exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.6)
 if torch.cuda.is_available():
     resnet = resnet.cuda()
     criterion = criterion.cuda()
-
-kaggle_submission(resnet, 'resnet34_thresh_epoch24', sub_data)
-
+'''
 def init_weights(m):
     if type(m) == nn.Linear:
         torch.nn.init.kaiming_normal_(m.weight)
 resnet.apply(init_weights)
 # Train
-'''
+
 for epoch in range(epochs):
     train_model(resnet, epoch, train_loader)
     print('train accuracy: ')
@@ -201,7 +198,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'resnet34_thresh_epoch' + str(epoch)
+    savefile = 'se_resnet34epoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -242,4 +239,6 @@ plt.title('Accuracy over time')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.show()
+
 '''
+kaggle_submission(resnet, 'se_resnet34epoch20', sub_data)
