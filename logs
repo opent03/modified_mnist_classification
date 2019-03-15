@@ -9,3 +9,5 @@ Threshold works well on the validation set (in fac, 95.7%) but gives bs predicti
 For some reason idk??
 
 Trying squeeze and excitation networks
+
+Success! We are at 97.5% on kaggle 
