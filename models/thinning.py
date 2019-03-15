@@ -3,10 +3,12 @@
 Prototyping the thinning pipeline, might not use it tho
 '''
 from models import load_data, view_image
+from models.img_processing import threshold_background
 import numpy as np
 
 import cv2 as cv
 from PIL import Image
+
 train_data, train_labels, sub_data = load_data('data/', 
 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
 
@@ -25,13 +27,13 @@ def convert_to_3_channels(img_array):
         new_array.append(new_image)
     return np.asarray(new_array)
 
-train_data = convert_to_3_channels(train_data)
-sub_data = convert_to_3_channels(sub_data)
-print(train_data.shape)
+'''train_data = convert_to_3_channels(train_data)
+sub_data = convert_to_3_channels(sub_data)'''
 image = np.array(sub_data[0][0], dtype=np.uint8)
-image = np.rint(image/255)
-image = np.array(image*255, dtype=np.uint8)
-
+'''image = np.rint(image/255)
+image = np.array(image*255, dtype=np.uint8)'''
+image = threshold_background([image])
+image = image[0]
 #des = np.zeros(shape=(image.shape), dtype=np.uint8)
 image = cv.ximgproc.thinning(image)
 view_image(image)

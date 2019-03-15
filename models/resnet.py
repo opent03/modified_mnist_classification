@@ -16,13 +16,14 @@ from torch.autograd import Variable
 import numpy as np
 import pickle
 from models import load_data, view_image
-from models.img_processing import to3chan, denoising, threshold_background, compose
+from models.img_processing import to3chan, threshold_background, compose, thin
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import ion, draw
 import matplotlib.animation as animation
 from matplotlib import style
 from PIL import Image
+import scipy.misc
 import random
 style.use('fivethirtyeight')
 # write
@@ -120,14 +121,9 @@ WHERE THINGS START
 train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
 train_labels = train_labels['Category'].values          # Get labels
 # Image processing
-train_data = np.array(train_data, dtype=np.uint8)
-sub_data = np.array(sub_data, dtype=np.uint8)
-print(train_data.shape)
-exit()
-functions = [denoising, threshold_background]
-train_data, sub_data = compose(train_data, functions), compose(sub_data, functions)
-view_image(sub_data[0])
-exit(0)
+functions = [threshold_background]  # Must be in order
+train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
+
 train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
 train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
@@ -135,8 +131,6 @@ train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_dat
 # Convert to 3 channels so it actually work with most pretrained models
 train_data, sub_data = to3chan(train_data), to3chan(sub_data)
 
-#np.save('saves/train_data.npy', train_data)
-#train_data = np.load('saves/train_data.npy')
 # Split data
 X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
 
@@ -159,20 +153,20 @@ test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=F
 # Flex that massive GPU
 print('--INITIALIZING RESNET--')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet = torchmodels.resnet50(pretrained=True)
+resnet = torchmodels.resnet34(pretrained=False)
 
 # Do this if pretrained
-
+'''
 ct = 0
 for child in resnet.children():
     ct += 1
     if ct < 4:
         for param in child.parameters():
-            param.requires_grad = False
+            param.requires_grad = False'''
 #resnet.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 # For inception
 #resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
-resnet.fc = nn.Linear(2048, 10)
+resnet.fc = nn.Linear(512, 10)
 
 def init_weights(m):
     if type(m) == nn.Linear:
@@ -189,8 +183,10 @@ if torch.cuda.is_available():
     resnet = resnet.cuda()
     criterion = criterion.cuda()
 
-# Train
+kaggle_submission(resnet, 'resnet34_thresh_epoch15', sub_data)
 
+# Train
+'''
 for epoch in range(epochs):
     train_model(resnet, epoch, train_loader)
     print('train accuracy: ')
@@ -204,7 +200,7 @@ for epoch in range(epochs):
     f.close()
 
     # Save epoch successive weights
-    savefile = 'resnet50_pretrainedepoch' + str(epoch)
+    savefile = 'resnet34_thresh_epoch' + str(epoch)
     torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -245,3 +241,4 @@ plt.title('Accuracy over time')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.show()
+'''
