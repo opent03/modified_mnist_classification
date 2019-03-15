@@ -111,7 +111,7 @@ def kaggle_submission(resnet, name, sub_data):
         pred = int(output.data.cpu().numpy())
         sub_labels.append([i, pred])
         if i % (len(torch_sub_data)/100) == 0:
-            print('{}%'.format(i/len(torch_sub_data)*100 + 1))
+            print('{:.2f}%'.format(i/len(torch_sub_data)*100 + 1))
         
     np.savetxt('kaggle_{}.csv'.format(name), sub_labels, delimiter=',')
 
@@ -168,10 +168,7 @@ for child in resnet.children():
 #resnet.Conv2d_1a_3x3 = inception.BasicConv2d(1, 32, kernel_size=3, stride=2)
 resnet.fc = nn.Linear(512, 10)
 
-def init_weights(m):
-    if type(m) == nn.Linear:
-        torch.nn.init.kaiming_normal_(m.weight)
-resnet.apply(init_weights)
+
 
 print('--STARTING TRAINING--')
 # Other important variables etc...
@@ -183,8 +180,12 @@ if torch.cuda.is_available():
     resnet = resnet.cuda()
     criterion = criterion.cuda()
 
-kaggle_submission(resnet, 'resnet34_thresh_epoch15', sub_data)
+kaggle_submission(resnet, 'resnet34_thresh_epoch24', sub_data)
 
+def init_weights(m):
+    if type(m) == nn.Linear:
+        torch.nn.init.kaiming_normal_(m.weight)
+resnet.apply(init_weights)
 # Train
 '''
 for epoch in range(epochs):
