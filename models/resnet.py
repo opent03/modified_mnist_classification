@@ -36,12 +36,38 @@ if os.path.exists(fld + 'lossfile.txt'):
 if os.path.exists(fld + 'accuracy.txt'):
     os.remove(fld + 'accuracy.txt')
 
+
+def load_torch_data():
+    train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
+    train_labels = train_labels['Category'].values          # Get labels
+    # Image processing
+    #functions = [threshold_background]  # Must be in order
+    #train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
+
+    train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
+    train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
+
+
+    # Convert to 3 channels so it actually work with most pretrained models
+    train_data, sub_data = to3chan(train_data), to3chan(sub_data)
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
+
+    torch_X_train = torch.from_numpy(X_train).type(torch.FloatTensor)
+    torch_y_train = torch.from_numpy(y_train).type(torch.LongTensor)
+    torch_X_test = torch.from_numpy(X_test).type(torch.FloatTensor)
+    torch_y_test = torch.from_numpy(y_test).type(torch.LongTensor)
+
+    train = torch.utils.data.TensorDataset(torch_X_train, torch_y_train)
+    test = torch.utils.data.TensorDataset(torch_X_test, torch_y_test)
+
+    return train, test, sub_data
+
 '''
 TRAINING/EVALUATING FUNCTIONS
 '''
-
-
-def train_model(model, epoch, train_loader):
+def train_model(model, exp_lr_scheduler, optimizer, criterion, epoch, train_loader):
     global loss_i
     model.train()
     exp_lr_scheduler.step()
@@ -119,126 +145,107 @@ def kaggle_submission(resnet, name, sub_data):
 '''
 WHERE THINGS START
 '''
-train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
-train_labels = train_labels['Category'].values          # Get labels
-# Image processing
-#functions = [threshold_background]  # Must be in order
-#train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
+def main():
+    train, test, sub_data = load_torch_data()
 
-train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
-train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
+    # Important variables
+    batch_size = 128
+    epochs = 21
 
+    # Make train and test loaders
+    train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=False)
 
-# Convert to 3 channels so it actually work with most pretrained models
-train_data, sub_data = to3chan(train_data), to3chan(sub_data)
+    # Flex that massive GPU
+    print('--INITIALIZING RESNET--')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    #resnet = torchmodels.resnet18(pretrained=False)
 
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
+    # Do this if pretrained
+    '''
+    ct = 0
+    for child in resnet.children():
+        ct += 1
+        if ct < 4:
+            for param in child.parameters():
+                param.requires_grad = False'''
 
-torch_X_train = torch.from_numpy(X_train).type(torch.FloatTensor)
-torch_y_train = torch.from_numpy(y_train).type(torch.LongTensor)
-torch_X_test = torch.from_numpy(X_test).type(torch.FloatTensor)
-torch_y_test = torch.from_numpy(y_test).type(torch.LongTensor)
+    #resnet.fc = nn.Linear(512, 10)
 
-train = torch.utils.data.TensorDataset(torch_X_train, torch_y_train)
-test = torch.utils.data.TensorDataset(torch_X_test, torch_y_test)
+    resnet = se_resnet56(num_classes=10)
 
-# Important variables
-batch_size = 128
-epochs = 21
+    print('--STARTING TRAINING--')
+    # Other important variables etc...
+    optimizer = optim.Adam(resnet.parameters(), lr=0.002)
+    criterion = nn.CrossEntropyLoss()
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.6)
 
-# Make train and test loaders
-train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
-test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=False)
+    if torch.cuda.is_available():
+        resnet = resnet.cuda()
+        criterion = criterion.cuda()
 
-# Flex that massive GPU
-print('--INITIALIZING RESNET--')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#resnet = torchmodels.resnet18(pretrained=False)
+    def init_weights(m):
+        if type(m) == nn.Linear:
+            torch.nn.init.kaiming_normal_(m.weight)
+    resnet.apply(init_weights)
+    # Train
 
-# Do this if pretrained
-'''
-ct = 0
-for child in resnet.children():
-    ct += 1
-    if ct < 4:
-        for param in child.parameters():
-            param.requires_grad = False'''
+    for epoch in range(epochs):
+        train_model(resnet, exp_lr_scheduler, optimizer, criterion, epoch, train_loader)
+        print('train accuracy: ')
+        tracc = evaluate_model(resnet, train_loader)
+        print('test_accuracy: ')
+        teacc = evaluate_model(resnet, test_loader)
+        
+        # Write to file
+        f = open(fld + 'accuracy.txt', 'a')
+        f.write('{},{:.4f},{:.4f}\n'.format(epoch, tracc, teacc))
+        f.close()
 
-#resnet.fc = nn.Linear(512, 10)
-
-resnet = se_resnet56(num_classes=10)
-
-print('--STARTING TRAINING--')
-# Other important variables etc...
-optimizer = optim.Adam(resnet.parameters(), lr=0.002)
-criterion = nn.CrossEntropyLoss()
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.6)
-
-if torch.cuda.is_available():
-    resnet = resnet.cuda()
-    criterion = criterion.cuda()
-'''
-def init_weights(m):
-    if type(m) == nn.Linear:
-        torch.nn.init.kaiming_normal_(m.weight)
-resnet.apply(init_weights)
-# Train
-
-for epoch in range(epochs):
-    train_model(resnet, epoch, train_loader)
-    print('train accuracy: ')
-    tracc = evaluate_model(resnet, train_loader)
-    print('test_accuracy: ')
-    teacc = evaluate_model(resnet, test_loader)
-    
-    # Write to file
-    f = open(fld + 'accuracy.txt', 'a')
-    f.write('{},{:.4f},{:.4f}\n'.format(epoch, tracc, teacc))
-    f.close()
-
-    # Save epoch successive weights
-    savefile = 'se_resnet56epoch' + str(epoch)
-    torch.save(resnet.state_dict(), 'saves/' + savefile)
+        # Save epoch successive weights
+        savefile = 'se_resnet56epoch' + str(epoch)
+        torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
-# Plot loss over time
-fig1 = plt.figure()
-graph_data = open(fld + 'lossfile.txt', 'r').read()
-lines = graph_data.split('\n') 
-xs = []
-ys = []
-for line in lines:
-    if len(line) > 1 and not '':
-        x, y = line.split(',')
-        xs.append(float(x))
-        ys.append(float(y))
-plt.plot(xs, ys)
-plt.title('Loss over time')
-plt.xlabel('The flow of time')
-plt.ylabel('Loss')
+    # Plot loss over time
+    fig1 = plt.figure()
+    graph_data = open(fld + 'lossfile.txt', 'r').read()
+    lines = graph_data.split('\n') 
+    xs = []
+    ys = []
+    for line in lines:
+        if len(line) > 1 and not '':
+            x, y = line.split(',')
+            xs.append(float(x))
+            ys.append(float(y))
+    plt.plot(xs, ys)
+    plt.title('Loss over time')
+    plt.xlabel('The flow of time')
+    plt.ylabel('Loss')
 
-# Plot accuracy over epochs
-fig2 = plt.figure()
-graph_data = open(fld + 'accuracy.txt', 'r').read()
-lines = graph_data.split('\n')
-xs = []
-trs = []
-tes = []    
-for line in lines:
-    print(line)
-    if len(line) > 1 and not '':
-        x, train, test = line.split(',')
-        xs.append(float(x))
-        trs.append(float(train))
-        tes.append(float(test))
+    # Plot accuracy over epochs
+    fig2 = plt.figure()
+    graph_data = open(fld + 'accuracy.txt', 'r').read()
+    lines = graph_data.split('\n')
+    xs = []
+    trs = []
+    tes = []    
+    for line in lines:
+        print(line)
+        if len(line) > 1 and not '':
+            x, train, test = line.split(',')
+            xs.append(float(x))
+            trs.append(float(train))
+            tes.append(float(test))
 
-plt.plot(xs, trs, 'r')
-plt.plot(xs, tes, 'b')
-plt.title('Accuracy over time')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.show()
+    plt.plot(xs, trs, 'r')
+    plt.plot(xs, tes, 'b')
+    plt.title('Accuracy over time')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.show()
 
-'''
-kaggle_submission(resnet, 'se_resnet56epoch20', sub_data)
+    kaggle_submission(resnet, 'se_resnet56epoch20', sub_data)
+
+if __name__ == "__main__":
+    main()

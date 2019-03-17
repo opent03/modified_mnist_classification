@@ -23,6 +23,7 @@ def to3chan(img_array):
     return np.asarray(new_array)
 
 def threshold_background(image_array, threshold=240):
+    print("Thresholding background...")
     new_array = []
     for image in image_array:
         image = (image >= threshold)*255
@@ -37,8 +38,16 @@ def compose(image_array, functions):
     return np.array(new_array, dtype=np.uint8)
 
 def thin(image_array): 
+    print("Thinning image...")
     image_array = image_array.astype(np.uint8)
     new_array = []
     for image in image_array:
         new_array.append(cv.ximgproc.thinning(image, thinningType=1))
     return np.array(new_array, dtype=np.uint8)
+
+def flatten(image_array: np.ndarray):
+    print("Flattening...")
+    new_array = []
+    for image in image_array:
+        new_array.append(image.flatten())
+    return np.array(new_array)
