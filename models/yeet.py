@@ -28,6 +28,15 @@ import pandas as pd
 
 DIR = 'saves/'
 
+def stupid_voting(some_array):
+    lmao = []
+    for arr in some_array:
+        u, indices = np.unique(arr, return_inverse=True)
+        n = u[np.argmax(np.bincount(indices))]
+        lmao.append(n)
+    return lmao
+
+
 def construct_meta_features(models:list, names, train, test, batch_size):
     'yeet'
     train_features = []
@@ -74,9 +83,10 @@ def kaggle_meta_features(models:list, names, sub_data):
     features = []
     j = 0
     torch_sub_data = torch.from_numpy(sub_data).cuda()
-    '''
+    
     for model in models:
         sub_labels = []
+        model.eval()
         model.cuda()
         print('Constructing kaggle meta feature for model {}'.format(names[j]))
         j += 1
@@ -92,17 +102,7 @@ def kaggle_meta_features(models:list, names, sub_data):
                 print('{:.2f}%'.format(i/len(torch_sub_data)*100 + 1))
         
         features.append(sub_labels)
-    '''
-    for model in models: 
-        sub_labels = []
-        model.cuda()
-        print('Constructing kaggle meta feature for model {}'.format(names[j]))
-        j += 1
-        output = model(torch_sub_data)
-        pred = output.data.max(1, keepdim=True)[1]
-        yeet = pred.cpu().numpy().flatten().tolist()
-        sub_labels.append(yeet)
-
+    
     return np.array(features).T
 
 
@@ -172,19 +172,25 @@ plt.show()
 
 #clf = XGBClassifier(n_estimators=1000, tree_method='gpu_hist', verbosity=3, gamma=5)
 #clf = RandomForestClassifier(n_estimators=500)
-clf = SVC(kernel='rbf', C=500, gamma='scale')
+#clf = SVC(kernel='rbf', C=500, gamma='scale')
 #clf = ExtraTreesClassifier(n_estimators=1000, max_depth=3, bootstrap=True)
 #clf = MLPClassifier(hidden_layer_sizes=(15, 12, ), max_iter=2000)
-clf.fit(X_train, y_train)
-pred = clf.predict(X_test)
-scr = accuracy_score(y_test, pred)
-print('Accuracy score of meta classifier: {:.4f}'.format(scr))
+#clf.fit(X_train, y_train)
+#pred = clf.predict(X_test)
+#scr = accuracy_score(y_test, pred)
+#print('Accuracy score of meta classifier: {:.4f}'.format(scr))
 
+lmao = stupid_voting(X_train)
+scr = accuracy_score(y_train, lmao)
+print('Accuracy score on train: {:.4f}'.format(scr))
+
+lmao = stupid_voting(X_test)
+scr = accuracy_score(y_test, lmao)
+print('Accuracy score on test: {:.4f}'.format(scr))
 
 kaggle_meta = kaggle_meta_features(models, names, sub_data)
 print(kaggle_meta.shape)
-exit()
-kaggle_pred = clf.predict(kaggle_meta)
+kaggle_pred = stupid_voting(kaggle_meta)
 kaggle_array = []
 
 for i in range(len(kaggle_pred)):
