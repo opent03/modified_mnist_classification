@@ -56,18 +56,21 @@ def flatten(image_array: np.ndarray):
 def augment_tf_out_of_them(image_array: np.ndarray):
     sometimes = lambda aug: iaa.Sometimes(0.8, aug)
     seq = iaa.Sequential([
-        sometimes(iaa.Crop(px=(0,6))),
-        sometimes(iaa.Affine(
-            scale={"x": (0.8, 1.2), "y": (0.8, 1.2)}, # scale images to 80-120% of their size, individually per axis
-            translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, # translate by -20 to +20 percent (per axis)
-            rotate=(-25, 25), # rotate by -45 to +45 degrees
-            shear=(-10, 10), # shear by -16 to +16 degrees
-            order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
-            cval=(0, 255), # if mode is constant, use a cval between 0 and 255
-            mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
-        )),
-        sometimes(iaa.Emboss(alpha=1, strength=0.5))
-    ])
+        iaa.Fliplr(0.5), # horizontal flips
+        iaa.Crop(percent=(0, 0.1)), # random crops
+        # Make some images brighter and some darker.
+        # In 20% of all cases, we sample the multiplier once per channel,
+        # which can end up changing the color of the images.
+        iaa.Multiply((0.8, 1.2), per_channel=0.2),
+        # Apply affine transformations to each image.
+        # Scale/zoom them, translate/move them, rotate them and shear them.
+        iaa.Affine(
+            scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+            translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+            rotate=(-25, 25),
+            shear=(-8, 8)
+        )
+        ], random_order=True) # apply augmenters in random order
     image_array = np.transpose(image_array, (0,2,3,1))
     augmented = seq.augment_images(image_array)
     augmented = np.transpose(augmented, (0,3,1,2))
