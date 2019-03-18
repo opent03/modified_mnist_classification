@@ -25,7 +25,7 @@ from matplotlib import style
 from PIL import Image
 import scipy.misc
 import random
-#from senet.se_resnet import *
+from senet.se_resnet import *
 from imgaug import augmenters as iaa
 
 style.use('fivethirtyeight')
@@ -60,8 +60,9 @@ def load_torch_data():
     train_labels = np.concatenate((train_labels, train_labels, train_labels), axis=0)
     # Split data
     print(train_data.shape, train_labels.shape)
-    X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.1, random_state=1729)
-
+    #X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=False, test_size=0.1, random_state=1729)
+    X_train, X_test = train_data[12000:], train_data[:12000]
+    y_train, y_test = train_labels[12000:], train_labels[:12000]
     torch_X_train = torch.from_numpy(X_train).type(torch.FloatTensor)
     torch_y_train = torch.from_numpy(y_train).type(torch.LongTensor)
     torch_X_test = torch.from_numpy(X_test).type(torch.FloatTensor)
@@ -191,13 +192,13 @@ def main():
     if torch.cuda.is_available():
         resnet = resnet.cuda()
         criterion = criterion.cuda()
-
+    '''
     def init_weights(m):
         if type(m) == nn.Linear:
             torch.nn.init.kaiming_normal_(m.weight)
     resnet.apply(init_weights)
     # Train
-
+    
     for epoch in range(epochs):
         train_model(resnet, exp_lr_scheduler, optimizer, criterion, epoch, train_loader)
         print('train accuracy: ')
@@ -252,8 +253,8 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.show()
-    exit()
-    kaggle_submission(resnet, 'senet32augepoch20', sub_data)
+    '''
+    kaggle_submission(resnet, 'senet32augepoch17', sub_data)
 
 if __name__ == "__main__":
     main()
