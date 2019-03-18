@@ -58,6 +58,8 @@ def augment_tf_out_of_them(image_array: np.ndarray):
     sometimes = lambda aug: iaa.Sometimes(0.8, aug)
     seq = iaa.Sequential([
         iaa.Crop(percent=(0, 0.1)), # random crops
+        iaa.Dropout(p=0.1, per_channel=True),
+        iaa.SigmoidContrast(),
         # Make some images brighter and some darker.
         # In 20% of all cases, we sample the multiplier once per channel,
         # which can end up changing the color of the images.
@@ -69,7 +71,8 @@ def augment_tf_out_of_them(image_array: np.ndarray):
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)},
             rotate=(-15, 15),
             shear=(-5, 5)
-        )
+        ),
+        iaa.Emboss(alpha=1, strength=0.5)
         ], random_order=True) # apply augmenters in random order
     image_array = np.transpose(image_array, (0,2,3,1))
     augmented = seq.augment_images(image_array)
