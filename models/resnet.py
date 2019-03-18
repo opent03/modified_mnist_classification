@@ -69,7 +69,7 @@ def load_torch_data():
     exit()
     '''
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.1)
 
     torch_X_train = torch.from_numpy(X_train).type(torch.FloatTensor)
     torch_y_train = torch.from_numpy(y_train).type(torch.LongTensor)
@@ -176,7 +176,7 @@ def main():
     # Flex that massive GPU
     print('--INITIALIZING RESNET--')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    resnet = torchmodels.densenet121(pretrained=False)
+    resnet = torchmodels.densenet161(pretrained=False)
 
     # Do this if pretrained
     '''
@@ -220,7 +220,7 @@ def main():
         f.close()
 
         # Save epoch successive weights
-        savefile = 'densenet121epoch' + str(epoch)
+        savefile = 'densenet161epoch' + str(epoch)
         torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -262,7 +262,7 @@ def main():
     plt.ylabel('Accuracy')
     plt.show()
     exit()
-    kaggle_submission(resnet, 'densenet121epoch20', sub_data)
+    kaggle_submission(resnet, 'densenet161epoch20', sub_data)
 
 if __name__ == "__main__":
     main()
