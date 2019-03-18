@@ -4,7 +4,7 @@ Plots loss function and train/valid accuracy
 '''
 import matplotlib.pyplot as plt
 
-fld = 'track/resnet50_pretrained3/'
+fld = 'track/se_resnet56/'
 fig1 = plt.figure()
 graph_data = open(fld + 'lossfile.txt', 'r').read()
 lines = graph_data.split('\n') 

@@ -12,7 +12,7 @@ import pandas as pd
 import cv2 as cv
 from skimage.restoration import denoise_tv_chambolle
 from PIL import Image
-
+from imgaug import augmenters as iaa
 
 def to3chan(img_array):
     new_array = []
@@ -51,3 +51,10 @@ def flatten(image_array: np.ndarray):
     for image in image_array:
         new_array.append(image.flatten())
     return np.array(new_array)
+
+def augment_tf_out_of_them(image_array: np.ndarray):
+    seq = iaa.Sequential([
+        sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+        iaa.GaussianBlur(sigma=(0,3.0)),
+        iaa.Crop(px=(0,6)),
+    ])

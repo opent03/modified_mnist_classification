@@ -176,7 +176,7 @@ def main():
     # Flex that massive GPU
     print('--INITIALIZING RESNET--')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    resnet = torchmodels.densenet161(pretrained=False)
+    resnet = torchmodels.vgg13_bn(pretrained=False)
 
     # Do this if pretrained
     '''
@@ -220,7 +220,7 @@ def main():
         f.close()
 
         # Save epoch successive weights
-        savefile = 'densenet161epoch' + str(epoch)
+        savefile = 'vgg13bnepoch' + str(epoch)
         torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -262,7 +262,7 @@ def main():
     plt.ylabel('Accuracy')
     plt.show()
     exit()
-    kaggle_submission(resnet, 'densenet161epoch20', sub_data)
+    kaggle_submission(resnet, 'vgg13bnepoch20', sub_data)
 
 if __name__ == "__main__":
     main()
