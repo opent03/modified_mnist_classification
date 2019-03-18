@@ -52,13 +52,15 @@ def load_torch_data():
 
     # Convert to 3 channels so it actually work with most pretrained models
     train_data, sub_data = to3chan(train_data), to3chan(sub_data)
+
+    # LITT AUGMENTATION
     train_data2 = augment_tf_out_of_them(train_data)
-    for i in range(20):
-        print(train_labels[i])
-        view_image(train_data2[i][0])
-    exit()
+    train_data3 = augment_tf_out_of_them(train_data)
+    train_data = np.concatenate((train_data, train_data2, train_data3), axis=0)
+    train_labels = np.concatenate((train_labels, train_labels, train_labels), axis=0)
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.1)
+    print(train_data.shape, train_labels.shape)
+    X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.1, random_state=1729)
 
     torch_X_train = torch.from_numpy(X_train).type(torch.FloatTensor)
     torch_y_train = torch.from_numpy(y_train).type(torch.LongTensor)
@@ -165,7 +167,7 @@ def main():
     # Flex that massive GPU
     print('--INITIALIZING RESNET--')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    resnet = torchmodels.vgg13_bn(pretrained=False)
+    #resnet = torchmodels.vgg13_bn(pretrained=False)
 
     # Do this if pretrained
     '''
@@ -176,9 +178,9 @@ def main():
             for param in child.parameters():
                 param.requires_grad = False'''
 
-    resnet.fc = nn.Linear(512, 10)
+    #resnet.fc = nn.Linear(512, 10)
 
-    #resnet = se_resnet32(num_classes=10)
+    resnet = se_resnet32(num_classes=10)
 
     print('--STARTING TRAINING--')
     # Other important variables etc...
@@ -209,7 +211,7 @@ def main():
         f.close()
 
         # Save epoch successive weights
-        savefile = 'vgg13bnepoch' + str(epoch)
+        savefile = 'senet32augepoch' + str(epoch)
         torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -251,7 +253,7 @@ def main():
     plt.ylabel('Accuracy')
     plt.show()
     exit()
-    kaggle_submission(resnet, 'vgg13bnepoch20', sub_data)
+    kaggle_submission(resnet, 'senet32augepoch20', sub_data)
 
 if __name__ == "__main__":
     main()

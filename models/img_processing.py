@@ -66,7 +66,7 @@ def augment_tf_out_of_them(image_array: np.ndarray):
         # Scale/zoom them, translate/move them, rotate them and shear them.
         iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
-            translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+            translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)},
             rotate=(-15, 15),
             shear=(-5, 5)
         )
