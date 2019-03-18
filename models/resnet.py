@@ -46,16 +46,15 @@ def load_torch_data():
     #functions = [threshold_background]  # Must be in order
     #train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
 
-    train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data)[:,:,:,None]
+    train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
     train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
 
     # Convert to 3 channels so it actually work with most pretrained models
     train_data, sub_data = to3chan(train_data), to3chan(sub_data)
-
+    '''
     view_image4d(sub_data[0])
 
-    '''TEST DATA AUGMENTATION'''
     sub_data = np.transpose(sub_data, (0,2,3,1))
     print(sub_data.shape)
     seq = iaa.Sequential([
@@ -68,7 +67,7 @@ def load_torch_data():
     for i in range(10):
         view_image4d(sub_data[i])
     exit()
-
+    '''
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
 
