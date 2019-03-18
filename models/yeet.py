@@ -16,6 +16,15 @@ from torch.autograd import Variable
 from senet.se_resnet import *
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.svm import SVC
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, ExtraTreesClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neural_network import MLPClassifier
+from sklearn.manifold import TSNE
+from umap import UMAP
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
 DIR = 'saves/'
 
@@ -64,8 +73,8 @@ def loadxx(loader, model):
 def kaggle_meta_features(models:list, names, sub_data):
     features = []
     j = 0
-    torch_sub_data = torch.from_numpy(sub_data)
-    
+    torch_sub_data = torch.from_numpy(sub_data).cuda()
+    '''
     for model in models:
         sub_labels = []
         model.cuda()
@@ -83,6 +92,17 @@ def kaggle_meta_features(models:list, names, sub_data):
                 print('{:.2f}%'.format(i/len(torch_sub_data)*100 + 1))
         
         features.append(sub_labels)
+    '''
+    for model in models: 
+        sub_labels = []
+        model.cuda()
+        print('Constructing kaggle meta feature for model {}'.format(names[j]))
+        j += 1
+        output = model(torch_sub_data)
+        pred = output.data.max(1, keepdim=True)[1]
+        yeet = pred.cpu().numpy().flatten().tolist()
+        sub_labels.append(yeet)
+
     return np.array(features).T
 
 
@@ -126,23 +146,47 @@ names = ['resnet18pre', 'resnet34_v1', 'resnet34_v2', 'resnet50pre', 'senet32cif
 batch_size = 128
 train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
 test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=False)
-
+'''
 X_train, X_test, y_train, y_test = construct_meta_features(
     models, names, train, test, batch_size=batch_size
     )
-print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)'''
+'''
+X_train.dump('X_train')
+X_test.dump('X_test')
+y_train.dump('y_train')
+y_test.dump('y_test')'''
 
-xgb = XGBClassifier(n_estimators=1000, tree_method='gpu_hist', verbosity=3, gamma=5)
-xgb.fit(X_train, y_train)
-pred = xgb.predict(X_test)
+X_train, X_test = np.load('X_train'), np.load('X_test')
+y_train, y_test = np.load('y_train'), np.load('y_test')
+'''
+reducer = UMAP()
+reducer.fit(np.concatenate((X_train, X_test), axis=0))
+X_train = reducer.transform(X_train)
+print(X_train.shape)
+plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
+plt.gca().set_aspect('equal', 'datalim')
+plt.title('UMAP projection of the Iris dataset', fontsize=24)
+plt.show()
+'''
+
+#clf = XGBClassifier(n_estimators=1000, tree_method='gpu_hist', verbosity=3, gamma=5)
+#clf = RandomForestClassifier(n_estimators=500)
+clf = SVC(kernel='rbf', C=500, gamma='scale')
+#clf = ExtraTreesClassifier(n_estimators=1000, max_depth=3, bootstrap=True)
+#clf = MLPClassifier(hidden_layer_sizes=(15, 12, ), max_iter=2000)
+clf.fit(X_train, y_train)
+pred = clf.predict(X_test)
 scr = accuracy_score(y_test, pred)
 print('Accuracy score of meta classifier: {:.4f}'.format(scr))
 
-kaggle_meta = kaggle_meta_features(models, names, sub_data)
 
-kaggle_pred = xgb.predict(kaggle_meta)
+kaggle_meta = kaggle_meta_features(models, names, sub_data)
+print(kaggle_meta.shape)
+exit()
+kaggle_pred = clf.predict(kaggle_meta)
 kaggle_array = []
 
 for i in range(len(kaggle_pred)):
     kaggle_array.append([i, kaggle_pred[i]])
-np.savetxt('whatthefuck.csv', kaggle_array, delimiter=',')
+np.savetxt('stacking.csv', kaggle_array, delimiter=',')
