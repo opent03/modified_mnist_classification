@@ -168,7 +168,7 @@ def main():
     # Flex that massive GPU
     print('--INITIALIZING RESNET--')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #resnet = torchmodels.vgg13_bn(pretrained=False)
+    resnet = torchmodels.densenet121(pretrained=False)
 
     # Do this if pretrained
     '''
@@ -179,9 +179,9 @@ def main():
             for param in child.parameters():
                 param.requires_grad = False'''
 
-    #resnet.fc = nn.Linear(512, 10)
+    resnet.fc = nn.Linear(512, 10)
 
-    resnet = se_resnet32(num_classes=10)
+    #resnet = se_resnet32(num_classes=10)
 
     print('--STARTING TRAINING--')
     # Other important variables etc...
@@ -192,7 +192,7 @@ def main():
     if torch.cuda.is_available():
         resnet = resnet.cuda()
         criterion = criterion.cuda()
-    '''
+    
     def init_weights(m):
         if type(m) == nn.Linear:
             torch.nn.init.kaiming_normal_(m.weight)
@@ -212,7 +212,7 @@ def main():
         f.close()
 
         # Save epoch successive weights
-        savefile = 'senet32augepoch' + str(epoch)
+        savefile = 'densenet121augepoch' + str(epoch)
         torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -253,8 +253,7 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.show()
-    '''
-    kaggle_submission(resnet, 'senet32augepoch17', sub_data)
+    kaggle_submission(resnet, 'densenet121augepoch20', sub_data)
 
 if __name__ == "__main__":
     main()
