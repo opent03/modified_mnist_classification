@@ -54,7 +54,7 @@ def load_torch_data():
     train_data, sub_data = to3chan(train_data), to3chan(sub_data)
     train_data2 = augment_tf_out_of_them(train_data)
     for i in range(10):
-        view_image(train_data2[i])
+        view_image(train_data2[i][0])
     exit()
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.1)
