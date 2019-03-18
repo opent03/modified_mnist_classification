@@ -56,7 +56,6 @@ def flatten(image_array: np.ndarray):
 def augment_tf_out_of_them(image_array: np.ndarray):
     sometimes = lambda aug: iaa.Sometimes(0.8, aug)
     seq = iaa.Sequential([
-        iaa.Fliplr(0.5), # horizontal flips
         iaa.Crop(percent=(0, 0.1)), # random crops
         # Make some images brighter and some darker.
         # In 20% of all cases, we sample the multiplier once per channel,
@@ -65,10 +64,10 @@ def augment_tf_out_of_them(image_array: np.ndarray):
         # Apply affine transformations to each image.
         # Scale/zoom them, translate/move them, rotate them and shear them.
         iaa.Affine(
-            scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+            scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
             translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-            rotate=(-25, 25),
-            shear=(-8, 8)
+            rotate=(-15, 15),
+            shear=(-5, 5)
         )
         ], random_order=True) # apply augmenters in random order
     image_array = np.transpose(image_array, (0,2,3,1))

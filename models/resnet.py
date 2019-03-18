@@ -53,7 +53,8 @@ def load_torch_data():
     # Convert to 3 channels so it actually work with most pretrained models
     train_data, sub_data = to3chan(train_data), to3chan(sub_data)
     train_data2 = augment_tf_out_of_them(train_data)
-    for i in range(10):
+    for i in range(20):
+        print(train_labels[i])
         view_image(train_data2[i][0])
     exit()
     # Split data
