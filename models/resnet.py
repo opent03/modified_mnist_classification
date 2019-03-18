@@ -16,7 +16,7 @@ from torch.autograd import Variable
 import numpy as np
 import pickle
 from models import load_data, view_image, view_image4d
-from models.img_processing import to3chan, threshold_background, compose, thin
+from models.img_processing import to3chan, threshold_background, compose, thin, augment_tf_out_of_them
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import ion, draw
@@ -25,7 +25,7 @@ from matplotlib import style
 from PIL import Image
 import scipy.misc
 import random
-from senet.se_resnet import *
+#from senet.se_resnet import *
 from imgaug import augmenters as iaa
 
 style.use('fivethirtyeight')
@@ -52,22 +52,10 @@ def load_torch_data():
 
     # Convert to 3 channels so it actually work with most pretrained models
     train_data, sub_data = to3chan(train_data), to3chan(sub_data)
-    '''
-    view_image4d(sub_data[0])
-
-    sub_data = np.transpose(sub_data, (0,2,3,1))
-    print(sub_data.shape)
-    seq = iaa.Sequential([
-        iaa.Crop(px=(0,5)),
-        iaa.Dropout(p=0.03)
-        iaa.GaussianBlur(sigma=(0, 3.0))
-    ])
-    sub_data = seq.augment_images(sub_data)
-    sub_data = np.transpose(sub_data, (0,3,1,2))
+    train_data2 = augment_tf_out_of_them(train_data)
     for i in range(10):
-        view_image4d(sub_data[i])
+        view_image(train_data2[i])
     exit()
-    '''
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.1)
 
