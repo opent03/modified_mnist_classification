@@ -54,6 +54,7 @@ def flatten(image_array: np.ndarray):
     return np.array(new_array)
 
 def augment_tf_out_of_them(image_array: np.ndarray):
+    ia.seed(np.random.randint(0))
     sometimes = lambda aug: iaa.Sometimes(0.8, aug)
     seq = iaa.Sequential([
         iaa.Crop(percent=(0, 0.1)), # random crops
