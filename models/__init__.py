@@ -19,3 +19,10 @@ def view_image(image):
     plt.imshow(im)
     plt.show()
 
+
+def view_image4d(image):
+    'Displays a single image'
+    im = np.array(image[0], dtype='float')
+    plt.imshow(im)
+    plt.show()
+

@@ -15,7 +15,7 @@ from torch.optim import lr_scheduler
 from torch.autograd import Variable
 import numpy as np
 import pickle
-from models import load_data, view_image
+from models import load_data, view_image, view_image4d
 from models.img_processing import to3chan, threshold_background, compose, thin
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
@@ -26,6 +26,8 @@ from PIL import Image
 import scipy.misc
 import random
 from senet.se_resnet import *
+from imgaug import augmenters as iaa
+
 style.use('fivethirtyeight')
 # write
 fld = 'track/'
@@ -44,12 +46,28 @@ def load_torch_data():
     #functions = [threshold_background]  # Must be in order
     #train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
 
-    train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
+    train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data)[:,:,:,None]
     train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
 
     # Convert to 3 channels so it actually work with most pretrained models
     train_data, sub_data = to3chan(train_data), to3chan(sub_data)
+
+    view_image4d(sub_data[0])
+
+    '''TEST DATA AUGMENTATION'''
+    sub_data = np.transpose(sub_data, (0,2,3,1))
+    print(sub_data.shape)
+    seq = iaa.Sequential([
+        iaa.Crop(px=(0,5)),
+        iaa.Dropout(p=0.03)
+        iaa.GaussianBlur(sigma=(0, 3.0))
+    ])
+    sub_data = seq.augment_images(sub_data)
+    sub_data = np.transpose(sub_data, (0,3,1,2))
+    for i in range(10):
+        view_image4d(sub_data[i])
+    exit()
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=True, test_size=0.2)
@@ -172,7 +190,7 @@ def main():
 
     #resnet.fc = nn.Linear(512, 10)
 
-    resnet = se_resnet56(num_classes=10)
+    resnet = se_resnet32(num_classes=10)
 
     print('--STARTING TRAINING--')
     # Other important variables etc...
@@ -203,7 +221,7 @@ def main():
         f.close()
 
         # Save epoch successive weights
-        savefile = 'se_resnet56epoch' + str(epoch)
+        savefile = 'se_resnet32xepoch' + str(epoch)
         torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -244,8 +262,8 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.show()
-
-    kaggle_submission(resnet, 'se_resnet56epoch20', sub_data)
+    exit()
+    kaggle_submission(resnet, 'se_resnet32xepoch20', sub_data)
 
 if __name__ == "__main__":
     main()
