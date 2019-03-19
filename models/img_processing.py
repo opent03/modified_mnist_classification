@@ -79,5 +79,4 @@ def augment_tf_out_of_them(image_array: np.ndarray):
     augmented = np.transpose(augmented, (0,3,1,2))
     print("Augmented!")
     return augmented
-    
 
