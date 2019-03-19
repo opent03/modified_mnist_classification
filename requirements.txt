@@ -1,0 +1,15 @@
+torch
+torchsummary
+torchvision
+numpy
+scipy
+scikit-learn
+matplotlib
+pillow
+opencv-python
+imgaug
+pandas
+xgboost
+scikit-image
+umap
+seaborn

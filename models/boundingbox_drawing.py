@@ -1,6 +1,7 @@
 """
 @author: viet
 This program draws bounding boxes around numbers in the modified-MNIST
+Please don't use
 """
 
 import pickle

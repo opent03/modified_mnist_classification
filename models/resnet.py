@@ -39,30 +39,38 @@ if os.path.exists(fld + 'accuracy.txt'):
     os.remove(fld + 'accuracy.txt')
 
 
-def load_torch_data():
+def load_torch_data(augment=True, factor=0.1, t3c=True):
+    print('Loading torch data')
     train_data, train_labels, sub_data = load_data('data/', 'train_images.pkl', 'train_labels.csv', 'test_images.pkl')
     train_labels = train_labels['Category'].values          # Get labels
     # Image processing
     #functions = [threshold_background]  # Must be in order
     #train_data, new_sub_data = compose(train_data, functions), compose(sub_data, functions)
 
-    train_data, sub_data = (train_data/255)[:,:,:,None], (sub_data/255)[:,:,:,None]
+    train_data, sub_data = (train_data)[:,:,:,None], (sub_data)[:,:,:,None]
     train_data, sub_data = np.transpose(train_data, (0,3,1,2)), np.transpose(sub_data, (0,3,1,2))
 
 
     # Convert to 3 channels so it actually work with most pretrained models
-    train_data, sub_data = to3chan(train_data), to3chan(sub_data)
+    if t3c:
+        train_data, sub_data = to3chan(train_data), to3chan(sub_data)
+    if augment:
+        # LITT AUGMENTATION
+        train_data2 = augment_tf_out_of_them(train_data)
+        train_data3 = augment_tf_out_of_them(train_data)
+        train_data = np.concatenate((train_data, train_data2, train_data3), axis=0)
+        train_labels = np.concatenate((train_labels, train_labels, train_labels), axis=0)
+        # Split data
+        print(train_data.shape, train_labels.shape)
 
-    # LITT AUGMENTATION
-    train_data2 = augment_tf_out_of_them(train_data)
-    train_data3 = augment_tf_out_of_them(train_data)
-    train_data = np.concatenate((train_data, train_data2, train_data3), axis=0)
-    train_labels = np.concatenate((train_labels, train_labels, train_labels), axis=0)
-    # Split data
-    print(train_data.shape, train_labels.shape)
+    # Ghetto normalizer
+    train_data, sub_data = train_data/255, sub_data/255
+
+    whatever = int(factor*train_data.shape[0])
     #X_train, X_test, y_train, y_test = train_test_split(train_data, train_labels, shuffle=False, test_size=0.1, random_state=1729)
-    X_train, X_test = train_data[12000:], train_data[:12000]
-    y_train, y_test = train_labels[12000:], train_labels[:12000]
+    X_train, X_test = train_data[whatever:], train_data[:whatever]
+    y_train, y_test = train_labels[whatever:], train_labels[:whatever]
+
     torch_X_train = torch.from_numpy(X_train).type(torch.FloatTensor)
     torch_y_train = torch.from_numpy(y_train).type(torch.LongTensor)
     torch_X_test = torch.from_numpy(X_test).type(torch.FloatTensor)
@@ -155,11 +163,11 @@ def kaggle_submission(resnet, name, sub_data):
 WHERE THINGS START
 '''
 def main():
-    train, test, sub_data = load_torch_data()
+    train, test, sub_data = load_torch_data(augment=False, t3c=True)
 
     # Important variables
     batch_size = 128
-    epochs = 21
+    epochs = 20
 
     # Make train and test loaders
     train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
@@ -168,7 +176,7 @@ def main():
     # Flex that massive GPU
     print('--INITIALIZING RESNET--')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    resnet = torchmodels.densenet121(pretrained=False)
+    #resnet = torchmodels.resnet50(pretrained=False)
 
     # Do this if pretrained
     '''
@@ -179,9 +187,9 @@ def main():
             for param in child.parameters():
                 param.requires_grad = False'''
 
-    resnet.fc = nn.Linear(512, 10)
+    #resnet.fc = nn.Linear(512, 10)
 
-    #resnet = se_resnet32(num_classes=10)
+    resnet = se_resnet56(num_classes=10)
 
     print('--STARTING TRAINING--')
     # Other important variables etc...
@@ -212,7 +220,7 @@ def main():
         f.close()
 
         # Save epoch successive weights
-        savefile = 'densenet121augepoch' + str(epoch)
+        savefile = 'densenet161augepoch' + str(epoch)
         torch.save(resnet.state_dict(), 'saves/' + savefile)
 
 
@@ -253,7 +261,7 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.show()
-    kaggle_submission(resnet, 'densenet121augepoch20', sub_data)
+    kaggle_submission(resnet, 'densenet161augepoch18', sub_data)
 
 if __name__ == "__main__":
     main()

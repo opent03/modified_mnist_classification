@@ -1,7 +1,7 @@
 '''
 @author: viet
 This file contains basic image processing methods
-and a method to compose methods LOL
+and a method to compose methods
 '''
 
 import pickle
@@ -21,7 +21,7 @@ def to3chan(img_array):
         e = img_array[i][0]
         new_image = [e,e,e] # 3 channels
         new_array.append(new_image)
-    return np.asarray(new_array)
+    return np.array(new_array, dtype=np.uint8)
 
 def threshold_background(image_array, threshold=240):
     print("Thresholding background...")
@@ -54,21 +54,21 @@ def flatten(image_array: np.ndarray):
     return np.array(new_array)
 
 def augment_tf_out_of_them(image_array: np.ndarray):
+    print("Augmenting...")
     ia.seed(np.random.randint(0, 500))
     sometimes = lambda aug: iaa.Sometimes(0.8, aug)
     seq = iaa.Sequential([
         iaa.Crop(percent=(0, 0.1)), # random crops
         iaa.Dropout(p=0.1, per_channel=True),
-        iaa.SigmoidContrast(),
         # Make some images brighter and some darker.
         # In 20% of all cases, we sample the multiplier once per channel,
         # which can end up changing the color of the images.
-        iaa.Multiply((0.8, 1.2), per_channel=0.2),
+        iaa.Multiply((0.87, 1.3), per_channel=0.2),
         # Apply affine transformations to each image.
         # Scale/zoom them, translate/move them, rotate them and shear them.
         iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)},
-            translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)},
+            translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
             rotate=(-15, 15),
             shear=(-5, 5)
         ),
@@ -77,6 +77,7 @@ def augment_tf_out_of_them(image_array: np.ndarray):
     image_array = np.transpose(image_array, (0,2,3,1))
     augmented = seq.augment_images(image_array)
     augmented = np.transpose(augmented, (0,3,1,2))
+    print("Augmented!")
     return augmented
-
+    
 

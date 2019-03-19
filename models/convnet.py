@@ -2,6 +2,7 @@
 @author: viet 
 Courtesy of user: wuchangsheng, who so kindly shared his kernel on Kaggle
 fmi, https://www.kaggle.com/wuchangsheng/pytorch-cnn
+This random convnet that I conjured in 20 mins with ctrl+C and ctrl+V. Got 94% after 20 epochs uwuwuwuwu
 """
 
 import torch
@@ -22,6 +23,7 @@ import matplotlib.pyplot as plt
 import cv2 as cv
 
 from models import view_image
+from models.resnet import load_torch_data
 
 class mydata(Dataset):
      def __init__(self, file_path, 
@@ -171,11 +173,55 @@ class Net(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),         
             nn.Dropout(p = 0.25),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),         
+            nn.Dropout(p = 0.25),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),         
+            nn.Dropout(p = 0.25),
+            
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),        
+            nn.Dropout(p = 0.25),
+            
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),        
+            nn.Dropout(p = 0.25),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),        
+            nn.Dropout(p = 0.25),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),        
+            nn.Dropout(p = 0.25),
+            
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1,padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),    
+            nn.MaxPool2d(kernel_size=2, stride=2),    
+            nn.Dropout(p = 0.25),
         )
           
         self.vanilla = nn.Sequential(
             nn.Dropout(p = 0.25),
-            nn.Linear(128 * 7 * 7, 512),
+            nn.Linear(2048, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(p = 0.25),
             nn.Linear(512, 10),
@@ -183,13 +229,14 @@ class Net(nn.Module):
 
     def forward(self, x):
         x = self.weirdlayers(x)
+        
         x = x.view(x.size(0), -1) 
         x = self.vanilla(x)
         
         return x
 
 
-def train(epoch):
+def train(model, exp_lr_scheduler, optimizer, criterion, epoch, train_loader):
     model.train()
     exp_lr_scheduler.step()
 
@@ -212,7 +259,7 @@ def train(epoch):
                 epoch, (batch_idx + 1) * len(data), len(train_loader.dataset),
                 100. * (batch_idx + 1) / len(train_loader), loss.item()))
 
-def evaluate(data_loader):
+def evaluate(model, data_loader):
     model.eval()
     loss = 0
     correct = 0
@@ -253,59 +300,35 @@ def prediction(data_loader):
     return test_pred
 
 """Starts here"""
+def main():
+    print('Starting')
+    batch_size = 128
+    learning_rate = 1e-4
+    n_epochs = 20
+    train_dataset, test_dataset, sub_data = load_torch_data(augment=False, t3c=False)
 
-DIR = 'mnist/'
-test_df = pd.read_csv(DIR + 'test.csv')
-batch_size = 64
-n_test = len(test_df)
-n_pixels = len(test_df.columns)
-train_dataset = mydata(DIR + 'train.csv', transform= transforms.Compose(
-                            [transforms.ToPILImage(), RandomRotation(degrees=20), RandomShift(3),
-                             transforms.ToTensor(), transforms.Normalize(mean=(0.5,), std=(0.5,))]))
-test_dataset = mydata(DIR + 'test.csv',)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                            batch_size=batch_size, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                            batch_size=batch_size, shuffle=False)
 
-# View an image
+    model = Net()
+    model.cuda()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    criterion = nn.CrossEntropyLoss()
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    if torch.cuda.is_available():
+        model = model.cuda()
+        criterion = criterion.cuda()
 
-a = train_dataset.__getitem__(0)[0].numpy()
-a = a.reshape(-1, a.shape[-1])
-print(a)
-"""
-cropped_image = np.load('cropped_image_4.npy')
-assert cropped_image.shape == (28, 28)
+    print(torch.cuda.get_device_name(0))
+    
+    for epoch in range(n_epochs):
+        train(model, exp_lr_scheduler, optimizer, criterion, epoch, train_loader)
+        evaluate(model, test_loader)
 
-cropped_image = cropped_image[np.newaxis, :, :]
-"""
-model = Net()
-model.load_state_dict(torch.load('saves/cnn99'))
-model.eval()
-model.cuda()
-im_loader = torch.utils.data.DataLoader(dataset=oneimage)
-for i, data in enumerate(im_loader):
-    print(model(data))
-#train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-#                                           batch_size=batch_size, shuffle=True)
-#test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-#                                           batch_size=batch_size, shuffle=False)
+    torch.save(model.state_dict(), 'saves/convnetLOL') # Weights at 94%
 
 
-'''
-model = Net()
-model.cuda()
-optimizer = optim.Adam(model.parameters(), lr=0.003)
-criterion = nn.CrossEntropyLoss()
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
-if torch.cuda.is_available():
-    model = model.cuda()
-    criterion = criterion.cuda()
-
-print(torch.cuda.get_device_name(0))
-
-n_epochs = 20
-
-for epoch in range(n_epochs):
-    train(epoch)
-    evaluate(train_loader)
-
-torch.save(model.state_dict(), 'saves/cnn99')
-'''
-
+if __name__ == "__main__":
+    main()
